@@ -7,7 +7,6 @@
 	SetBatchLines -1
 	ListLines, Off
 	SetWorkingDir, %A_ScriptDir%
-	OnExit, ExitSub
 	Global InstallDir, AhkPic, VTPic, RadioSendTo, RadioIfShift, NoCompile, InstallButtonid, ExistInstallDir, howerText, installGuiHwnd
 
 if (%0%>0) { ; command line extraction
@@ -33,14 +32,16 @@ Return
 
 guiShow(ExistInstallDir:="") {
 	;holding down  (shift + right-click). then hold down SHIFT key;  if you hold down the Shift key while/when clicking. Holding the shift key when calling up a context menu
-	lng := (A_Language=0419) ? "ru" : "en"
-	TitleText:={en:"VirusTotal Hash Checker Setup",ru:"Установка VirusTotal HashChecker"}[lng]
+	lngCodeList := {0419:"ru"}
+	lng := lngCodeList[A_Language] ? lngCodeList[A_Language] : "en"
+	titleText:={en:"VirusTotal Hash Checker Setup",ru:"Установка VirusTotal HashChecker"}[lng]
 	howerText:={en:"wikipedia.org/wiki/Checksum",ru:"wikipedia.org/wiki/Контрольная сумма"}[lng]
-	explanationText := {en:"allow you `nto check file for malware`, by calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal",ru:"позволяет проверить файл на вирусы`nпутем вычисления его <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и сопоставления с хешами `nуже проверенных файлов на VirusTotal.`nПоскольку сам файл при этом никуда не отправляется, `nэто происходит быстро и без расхода траффика."}[lng]
-	installationText := {en:"allow you `nto scanner widespread files for malware.",ru:"Установка добавляет пункт в контектное меню проводника`,`nоднако можно проверять и без установки, перетаскивая файлы`,`nлибо на exe файл программы, либо на это окно."}[lng]
+	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal",ru:"позволяет проверить файл на вирусы`nпутем вычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> файла и его поиска среди хешей `nуже проверенных файлов на VirusTotal."}[lng]
+	; `nПоскольку сам файл при этом никуда не отправляется, `nэто происходит быстро и без расхода траффика.
+	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установка добавляет пункт в контектное меню проводника`,`nоднако можно проверять и без установки, перетаскивая файлы`,`nлибо на exe файл программы, либо на это окно."}[lng]
 	displayConMenText := {en:"Display context menu item",ru:"Отображать в контекстном меню"}[lng]
-	ShowInSendToText:={en:"in <Send to> submenu",ru:"В подменю |Отправить > |"}[lng]
-	ShowIfShiftText := {en:"when clamped SHIFT",ru:"При зажатом [SHIFT]'е"}[lng]
+	showSendToText := {en:"in |Send to > | submenu",ru:"В подменю |Отправить > |"}[lng]
+	showExtendText := {en:"if the [SHIFT] is pressed",ru:"При зажатом [SHIFT]'е"}[lng]
 	DestinationFolderText := {en:"Destination Folder",ru:"Папка установки"}[lng]
 	RegRead, DisplayScale, HKEY_CURRENT_USER, Control Panel\Desktop\WindowMetrics, AppliedDPI
 	If (DisplayScale=96) {
@@ -60,8 +61,8 @@ guiShow(ExistInstallDir:="") {
 	Gui, installGui: Add, Link, xm c0x444444, VirusTotal HashChecker %explanationText%
 	Gui, installGui: Add, Text, c0x444444 y+5, % installationText
 	Gui, installGui: Add, GroupBox, w390 h60 xm, %displayConMenText%:
-	Gui, installGui: Add, Radio, vRadioSendTo gChangeRadioDisplayItemOpt HwndRadioSendToId xp+10 yp+18, %ShowInSendToText%
-	Gui, installGui: Add, Radio, vRadioIfShift gChangeRadioDisplayItemOpt checked, %ShowIfShiftText%
+	Gui, installGui: Add, Radio, vRadioSendTo gChangeRadioDisplayItemOpt HwndRadioSendToId xp+10 yp+18, %showSendToText%
+	Gui, installGui: Add, Radio, vRadioIfShift gChangeRadioDisplayItemOpt checked, %showExtendText%
 	If ExistInstallDir {
 		RegRead extendContextKey, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command
 		If !extendContextKey
@@ -82,9 +83,10 @@ guiShow(ExistInstallDir:="") {
 	Gui, installGui: Add, Link, c0x0F75BC xm+150 yp+3 ,<a href="http://ahkscript.org/">ste@lzy</a>, 2016
 	; Gui, installGui: -Theme
 	Gui, installGui: +HwndinstallGuiHwnd
-	Gui, installGui: Show, ,%TitleText%
+	Gui, installGui: Show, ,%titleText%
 	ControlFocus,, ahk_id %InstallButtonid%
 	OnMessage(0x200, "Hower")
+	OnMessage(0x20, "Hower")
 	Return
 
 	GotoVTsite:
@@ -100,11 +102,11 @@ guiShow(ExistInstallDir:="") {
 			RegRead extendContextKey, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command
 			If ((extendContextKey && RadioSendTo) || (Not extendContextKey && RadioIfShift))
 			{
-				; Control Enable,,, ahk_id %InstallButtonid%
 				GuiControl, installGui:, % InstallButtonid, A&pply
+				ApplyButtonOn := true
 			} else {
-				; Control Disable,,, ahk_id %InstallButtonid%
 				GuiControl, installGui:, % InstallButtonid, &Uninstall
+				ApplyButtonOn := false
 			}
 		}
 		Return
@@ -118,7 +120,11 @@ guiShow(ExistInstallDir:="") {
 		install(InstallDir, RadioIfShift, RadioSendTo)
 		Return
 	Uninstall:
-		uninstall()
+		if ApplyButtonOn {
+			apply(RadioIfShift, RadioSendTo)
+		} else {
+			uninstall()
+		}
 		Return
 	OpenInstDir:
 		Run explorer.exe %InstallDir%
@@ -140,6 +146,62 @@ guiShow(ExistInstallDir:="") {
 		}
 		Return
 }
+Hower(wParam, lParam, msg, hwnd) {
+	static hCurs, hover, WM_SETCURSOR := 0x20, WM_MOUSEMOVE := 0x200
+	hCurs:=DllCall("LoadCursor","UInt",0,"Int",32649,"UInt") ;IDC_HAND
+
+	MouseGetPos, , , , ClassNNControlUnderM
+	MouseGetPos, , , , idControlUnderM, 2
+
+	If (msg = WM_SETCURSOR) && hover
+		return 1
+
+	if (msg = WM_MOUSEMOVE)
+	{
+		if (idControlUnderM=AhkPic || idControlUnderM=VTPic) {
+			hover := true
+			DllCall("SetCursor","UInt",hCurs)
+			TT((idControlUnderM=AhkPic) ? "ahkscript.org" : "virustotal.com", 1)
+		} else if (!(idControlUnderM=AhkPic || idControlUnderM=VTPic)) {
+			hover := false
+			TT(, 1)
+		}
+
+		if (ClassNNControlUnderM = "SysLink1")
+			if (A_Cursor != "Arrow") {
+				TT(howerText, 2)
+			} else {
+				TT(, 2)
+			}
+	}
+
+	Return
+}
+TT(text:="", numTT:="", show:=false) {
+	static textOld, numTTOld
+
+	if show
+	{
+		ToolTip % textOld,,, % numTTOld
+		Return
+	}
+
+	if (!text) {
+		SetTimer, ShowTT, Off
+		ToolTip,,,, % numTT
+	} else if (text!=textOld) {
+		SetTimer, ShowTT, Off
+		SetTimer, ShowTT, -400
+	}
+
+	textOld:=text
+	numTTOld:=numTT
+	Return
+
+	ShowTT:
+		TT(,, true)
+		Return
+}
 install(InstallDir, RadioIfShift, RadioSendTo) {
 	InstallDir := RegExReplace(InstallDir, "(.*[^\\]$)", "$1\")
 	FileCreateDir, %InstallDir%
@@ -154,11 +216,10 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 	; "%A_AhkPath% "
 	PathWithPar := """" InstPath """" " ""%1""" ;(A_IsCompiled) ? ("""" InstPath """" " ""%1""") : (NoCompile """" InstPath """" " ""%1""")
 	; "A_ScriptPath" "%1"
-	; MsgBox % NoCompile "`n" PathWithPar
 	if RadioIfShift {
 		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command, , %NoCompile%%PathWithPar%
 		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Extended
-		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Icon, %InstPath%
+		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Icon, % InstPath
 		if ErrorLevel
 			MsgBox Can't write in registry HKEY_CLASSES_ROOT
 	} else if RadioSendTo {
@@ -166,7 +227,6 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 		SplitPath, A_ScriptName,,,, A_ScriptNameNoExt
 		Args := A_IsCompiled ? "" : A_ScriptFullPath " "
 		Target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
-		; MsgBox % Target "`n" Args "`n" SendToDir "\" A_ScriptNameNoExt
 		FileCreateShortcut %Target%, %SendToDir%\%A_ScriptNameNoExt%.lnk,, %Args%
 	}
 	RegWrite, REG_SZ, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, UninstallString
@@ -183,6 +243,35 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 		MsgBox Can't write in registry HKEY_LOCAL_MACHINE
 	ExitApp
 	Return
+}
+apply(RadioIfShift, RadioSendTo) {
+	RegRead, InstallDir, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, InstallLocation
+	InstPath := InstallDir A_ScriptName
+	NoCompile := A_IsCompiled ? "" : """" A_AhkPath """" " "
+	PathWithPar := """" InstPath """" " ""%1""" ;(A_IsCompiled) ? ("""" InstPath """" " ""%1""") : (NoCompile """" InstPath """" " ""%1""")
+	If RadioIfShift {
+		RegRead, SendToDir, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders, SendTo
+		SplitPath, A_ScriptName,,,, A_ScriptNameNoExt
+		FileDelete, %SendToDir%\%A_ScriptNameNoExt%.lnk
+
+		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command, , %NoCompile%%PathWithPar%
+		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Extended
+		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Icon, % InstPath
+		if ErrorLevel
+			MsgBox Can't write in registry HKEY_CLASSES_ROOT
+	} else {
+		RegDelete, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check
+
+		RegRead, SendToDir, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders, SendTo
+		SplitPath, A_ScriptName,,,, A_ScriptNameNoExt
+		Args := A_IsCompiled ? "" : A_ScriptFullPath " "
+		Target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
+		FileCreateShortcut %Target%, %SendToDir%\%A_ScriptNameNoExt%.lnk,, %Args%
+	}
+	Control, Disable,,, ahk_id %InstallButtonid%
+	Sleep 1000
+	Control, Enable,,, ahk_id %InstallButtonid%
+	GuiControl, installGui:, % InstallButtonid, &Uninstall
 }
 uninstall() {
 	; Shift
@@ -211,49 +300,10 @@ uninstall() {
 	Run, %comspec% /c del "%InstallDir%%A_ScriptName%" & rd "%InstallDir%",, Hide ; hack - change A_ScriptName to regestry note
 	ExitApp
 }
+
 runURLwithFileHash(filePath) {
 	hash:= LowCase(HashFile(filePath, "SHA256"))
 	Run https://www.virustotal.com/ru/file/%hash%/analysis/
-}
-Hower() {
-	static cursor_hand
-	MouseGetPos, , , , ClassNNControlUnderM
-	MouseGetPos, , , , idControlUnderM, 2
-
-	if (idControlUnderM=AhkPic || idControlUnderM=VTPic) {
-		if !cursor_hand
-		{
-			SetSystemCursor("IDC_HAND")
-			cursor_hand := true
-			SetTimer, CheckCursorStillOnWindow, 100
-		}
-		ToolTip % (idControlUnderM=AhkPic) ? "ahkscript.org" : "virustotal.com"
-	} else if (!(idControlUnderM=AhkPic || idControlUnderM=VTPic)) {
-		if cursor_hand
-		{
-			SetSystemCursor("Restore")
-			cursor_hand := false
-			SetTimer, CheckCursorStillOnWindow, off
-		}
-		ToolTip
-	}
-
-	if (ClassNNControlUnderM = "SysLink1")
-		if (A_Cursor != "Arrow")
-			ToolTip % howerText
-		else
-			ToolTip
-
-	Return
-
-
-	CheckCursorStillOnWindow:
-		MouseGetPos,,, winID
-		if (winID != installGuiHwnd) {
-			SetSystemCursor("Restore")
-			ToolTip
-		}
-		Return
 }
 
 LowCase(string) {
@@ -343,92 +393,6 @@ HashFile(filePath,hashType=2) { ; By Deo, http://www.autohotkey.com/forum/viewto
    dllCall("Advapi32\CryptReleaseContext","Ptr",hCryptProv,"UInt",0)
    return hashval
 }
-SetSystemCursor( Cursor = "", cx = 0, cy = 0 ) {	; by Serenity. Minor modification by Learning one.
-	; http://www.autohotkey.com/forum/topic35600.html
-	if Cursor = Restore
-	{
-		DllCall( "SystemParametersInfo", UInt,0x57, UInt,0, UInt,0, UInt,0 )
-		Return
-	}
-	BlankCursor := 0, SystemCursor := 0, FileCursor := 0 ; init
-	SystemCursors = 32512IDC_ARROW,32513IDC_IBEAM,32514IDC_WAIT,32515IDC_CROSS
-	,32516IDC_UPARROW,32640IDC_SIZE,32641IDC_ICON,32642IDC_SIZENWSE
-	,32643IDC_SIZENESW,32644IDC_SIZEWE,32645IDC_SIZENS,32646IDC_SIZEALL
-	,32648IDC_NO,32649IDC_HAND,32650IDC_APPSTARTING,32651IDC_HELP
-	If Cursor = ; empty, so create blank cursor
-	{
-		VarSetCapacity( AndMask, 32*4, 0xFF ), VarSetCapacity( XorMask, 32*4, 0 )
-		BlankCursor = 1 ; flag for later
-	}
-	Else If SubStr( Cursor,1,4 ) = "IDC_" ; load system cursor
-	{
-		Loop, Parse, SystemCursors, `,
-		{
-			CursorName := SubStr( A_Loopfield, 6, 15 ) ; get the cursor name, no trailing space with substr
-			CursorID := SubStr( A_Loopfield, 1, 5 ) ; get the cursor id
-			SystemCursor = 1
-			If ( CursorName = Cursor )
-			{
-				CursorHandle := DllCall( "LoadCursor", Uint,0, Int,CursorID )
-				Break
-			}
-		}
-		If CursorHandle = ; invalid cursor name given
-		{
-			Msgbox,, SetCursor, Error: Invalid cursor name
-			CursorHandle = Error
-		}
-	}
-	Else If FileExist( Cursor )
-	{
-		SplitPath, Cursor,,, Ext ; auto-detect type
-		If Ext = ico
-			uType := 0x1
-		Else If Ext in cur,ani
-			uType := 0x2
-		Else ; invalid file ext
-		{
-			Msgbox,, SetCursor, Error: Invalid file type
-			CursorHandle = Error
-		}
-		FileCursor = 1
-	}
-	Else
-	{
-		Msgbox,, SetCursor, Error: Invalid file path or cursor name
-		CursorHandle = Error ; raise for later
-	}
-	If CursorHandle != Error
-	{
-		Loop, Parse, SystemCursors, `,
-		{
-			If BlankCursor = 1
-			{
-				Type = BlankCursor
-				%Type%%A_Index% := DllCall( "CreateCursor"
-				, Uint,0, Int,0, Int,0, Int,32, Int,32, Uint,&AndMask, Uint,&XorMask )
-				CursorHandle := DllCall( "CopyImage", Uint,%Type%%A_Index%, Uint,0x2, Int,0, Int,0, Int,0 )
-				DllCall( "SetSystemCursor", Uint,CursorHandle, Int,SubStr( A_Loopfield, 1, 5 ) )
-			}
-			Else If SystemCursor = 1
-			{
-				Type = SystemCursor
-				CursorHandle := DllCall( "LoadCursor", Uint,0, Int,CursorID )
-				%Type%%A_Index% := DllCall( "CopyImage"
-				, Uint,CursorHandle, Uint,0x2, Int,cx, Int,cy, Uint,0 )
-				CursorHandle := DllCall( "CopyImage", Uint,%Type%%A_Index%, Uint,0x2, Int,0, Int,0, Int,0 )
-				DllCall( "SetSystemCursor", Uint,CursorHandle, Int,SubStr( A_Loopfield, 1, 5 ) )
-			}
-			Else If FileCursor = 1
-			{
-				Type = FileCursor
-				%Type%%A_Index% := DllCall( "LoadImageA"
-				, UInt,0, Str,Cursor, UInt,uType, Int,cx, Int,cy, UInt,0x10 )
-				DllCall( "SetSystemCursor", Uint,%Type%%A_Index%, Int,SubStr( A_Loopfield, 1, 5 ) )
-			}
-		}
-	}
-}
 GuiButtonIcon(Handle, File, Index := 1, Options := "") {
 		RegExMatch(Options, "i)w\K\d+", W), (W="") ? W := 16 :
 		RegExMatch(Options, "i)h\K\d+", H), (H="") ? H := 16 :
@@ -444,14 +408,11 @@ GuiButtonIcon(Handle, File, Index := 1, Options := "") {
 		NumPut( L, button_il, 0 + Psz, DW )		; Left Margin
 		NumPut( T, button_il, 4 + Psz, DW )		; Top Margin
 		NumPut( R, button_il, 8 + Psz, DW )		; Right Margin
-		NumPut( B, button_il, 12 + Psz, DW )	; Bottom Margin	
+		NumPut( B, button_il, 12 + Psz, DW )	; Bottom Margin
 		NumPut( A, button_il, 16 + Psz, DW )	; Alignment
 		SendMessage, BCM_SETIMAGELIST := 5634, 0, &button_il,, AHK_ID %Handle%
 		return IL_Add( normal_il, File, Index )
 }
-ExitSub:
-	SetSystemCursor("Restore")
-	ExitApp
 
 /*
 	HKEY_CLASSES_ROOT\*\shell\VirusTotal hash check
@@ -476,5 +437,5 @@ ExitSub:
 		UninstallString="C:\Program Files (x86)\VirusTotalHashChecker\VirusTotalHashChecker.exe" -uninstall
 
 	проверка сущ файла из буфера обмена при запуске без пар
-	перетаскивание на окно
-	без параметров запускать от админа / запускать от админа по нажатию кнопки + pass submit dir & choice in param
+	запускать от админа по нажатию кнопки + pass submit dir & choice in param
+	картинки - install || code
