@@ -1,32 +1,35 @@
 ﻿#NoEnv
 	#SingleInstance Force
-	; #NoTrayIcon
-	; Comparision Phrozen VirusTotal Uploader: +No size-limit 128 Mb, +No internet traffic,
-	; if file unrecognized; -No uploads unrecognized files automatically. In this rare case, you can upload it manually.
+	#NoTrayIcon
 	#KeyHistory 0
 	SetBatchLines -1
 	ListLines, Off
 	SetWorkingDir, %A_ScriptDir%
 	Global InstallDir, AhkPic, VTPic, RadioSendTo, RadioIfShift, NoCompile, InstallButtonid, ExistInstallDir, howerText, installGuiHwnd
 
-if (%0%>0) { ; command line extraction
+param := []
+if (%0% != 0) { ; command line extraction
 	Loop, %0%
 	{
-		param := %A_Index%
+		param[A_Index] := %A_Index%
 	}
 
-	if (param="-uninstall")
+	if (param[1]="-uninstall")
 		uninstall()
-	runURLwithFileHash(param)
+	else if (param[1]="-install")
+		install(param[2], param[3] "\")
+	else if (param[1]="-apply")
+		apply(param[2])
+	else {
+		runURLwithFileHash(param[1])
+	}
 	ExitApp
 } else {
-	; RegRead, PathWithPar, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command
 	RegRead, ExistInstallDir, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, InstallLocation
 	if ErrorLevel
 		guiShow()
-	else {  ;SubStr(SubStr(PathWithPar,1, -6),2) - not unsuitable for non-compiled C:\ahk.exe" "C:\scr.ahk
-		guiShow(ExistInstallDir) ;(ExistInstallDir := RegExReplace(PathWithPar, "^.+""([^\""]+\\)[^\""\\]+"" ""%1""", "$1"))
-	}
+	else
+		guiShow(ExistInstallDir)
 }
 Return
 
@@ -36,9 +39,9 @@ guiShow(ExistInstallDir:="") {
 	lng := lngCodeList[A_Language] ? lngCodeList[A_Language] : "en"
 	titleText:={en:"VirusTotal Hash Checker Setup",ru:"Установка VirusTotal HashChecker"}[lng]
 	howerText:={en:"wikipedia.org/wiki/Checksum",ru:"wikipedia.org/wiki/Контрольная сумма"}[lng]
-	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal",ru:"позволяет проверить файл на вирусы`nпутем вычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> файла и его поиска среди хешей `nуже проверенных файлов на VirusTotal."}[lng]
+	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"позволяет проверить файл на вирусы путем`nвычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и его поиска в баз хешей проверенных файлов."}[lng]
 	; `nПоскольку сам файл при этом никуда не отправляется, `nэто происходит быстро и без расхода траффика.
-	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установка добавляет пункт в контектное меню проводника`,`nоднако можно проверять и без установки, перетаскивая файлы`,`nлибо на exe файл программы, либо на это окно."}[lng]
+	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установи и проверяй через контекстное меню`,`nлибо перетащи файлы на это окно или файл программы."}[lng]
 	displayConMenText := {en:"Display context menu item",ru:"Отображать в контекстном меню"}[lng]
 	showSendToText := {en:"in |Send to > | submenu",ru:"В подменю |Отправить > |"}[lng]
 	showExtendText := {en:"if the [SHIFT] is pressed",ru:"При зажатом [SHIFT]'е"}[lng]
@@ -69,8 +72,8 @@ guiShow(ExistInstallDir:="") {
 	Gui, installGui: Add, Link, xm c0x444444, VirusTotal HashChecker %explanationText%
 	Gui, installGui: Add, Text, c0x444444 y+5, % installationText
 	Gui, installGui: Add, GroupBox, w390 h60 xm, %displayConMenText%:
-	Gui, installGui: Add, Radio, vRadioSendTo gChangeRadioDisplayItemOpt HwndRadioSendToId xp+10 yp+18, %showSendToText%
-	Gui, installGui: Add, Radio, vRadioIfShift gChangeRadioDisplayItemOpt checked, %showExtendText%
+	Gui, installGui: Add, Radio, vRadioSendTo gChangeRadioDisplayItemOpt checked HwndRadioSendToId xp+10 yp+18, %showSendToText%
+	Gui, installGui: Add, Radio, vRadioIfShift gChangeRadioDisplayItemOpt, %showExtendText%
 	If ExistInstallDir {
 		RegRead extendContextKey, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command
 		If !extendContextKey
@@ -88,7 +91,7 @@ guiShow(ExistInstallDir:="") {
 	Gui, installGui: Add, Button, %rightButL% w70 xp+320 HwndInstallButtonid, %rightButName%
 	GuiButtonIcon(InstallButtonid, "imageres.dll", 74, "a0 l2")
 	Gui, installGui: Font, S9
-	Gui, installGui: Add, Link, c0x0F75BC xm+150 yp+3 ,<a href="http://ahkscript.org/">ste@lzy</a>, 2016
+	Gui, installGui: Add, Link, c0x0F75BC xm+150 yp+3 ,<a href="mailto:stealzy7@yandex.ru?subject=VirusTotalHashChecker">ste@lzy</a>, 2016
 	; Gui, installGui: -Theme
 	Gui, installGui: +HwndinstallGuiHwnd
 	Gui, installGui: Show, ,%titleText%
@@ -125,13 +128,29 @@ guiShow(ExistInstallDir:="") {
 		Return
 	Install:
 		Gui, installGui: Submit
-		install(InstallDir, RadioIfShift, RadioSendTo)
+		InstallDirWithoutSlash := SubStr(InstallDir, 1, -1)
+		If !A_IsAdmin {
+			Run *RunAs "%A_ScriptFullPath%" -install %RadioIfShift% "%InstallDirWithoutSlash%"
+		}
+		Else
+			install(RadioIfShift, InstallDir)
 		Return
 	Uninstall:
+		Gui, installGui: Submit, NoHide
 		if ApplyButtonOn {
-			apply(RadioIfShift, RadioSendTo)
+			If !A_IsAdmin {
+				Run *RunAs "%A_ScriptFullPath%" -apply %RadioIfShift%
+			}
+			Else {
+				ApplyButtonOn := false
+				apply(RadioIfShift)
+			}
 		} else {
-			uninstall()
+			If !A_IsAdmin {
+				Run *RunAs "%A_ScriptFullPath%" -uninstall %RadioIfShift%
+			}
+			Else
+				uninstall()
 		}
 		Return
 	OpenInstDir:
@@ -175,48 +194,47 @@ Hower(wParam, lParam, msg, hwnd) {
 			TT(, 1)
 		}
 
-		if (ClassNNControlUnderM = "SysLink1")
-			if (A_Cursor != "Arrow") {
-				TT(howerText, 2)
-			} else {
-				TT(, 2)
-			}
+		if (ClassNNControlUnderM = "SysLink1") && (A_Cursor != "Arrow") {
+			TT(howerText, 2)
+		} else {
+			TT(, 2)
+		}
+		if (ClassNNControlUnderM = "SysLink2") && (A_Cursor != "Arrow")
+		{
+			TT("stealzy7@yandex.ru", 3)
+		} else {
+			TT(, 3)
+		}
 	}
 
 	Return
 }
-TT(text:="", numTT:="", show:=false) {
+TT(textTT:="", numTT:="", showTT:=false) {
 	static textOld, numTTOld
 
-	if show
+	if textTT
 	{
-		ToolTip % textOld,,, % numTTOld
-		Return
-	}
-
-	if (!text) {
-		SetTimer, ShowTT, Off
-		ToolTip,,,, % numTT
-	} else if (text!=textOld) {
+		textOld:=textTT
+		numTTOld:=numTT
 		SetTimer, ShowTT, Off
 		SetTimer, ShowTT, -400
+	} else if (showTT ) {
+		ToolTip % textOld,,, % numTTOld
+		Hower(wParam, lParam, 0x200, hwnd)
+	} else {
+		ToolTip,,,, % numTT
 	}
-
-	textOld:=text
-	numTTOld:=numTT
 	Return
 
 	ShowTT:
 		TT(,, true)
 		Return
 }
-install(InstallDir, RadioIfShift, RadioSendTo) {
+install(RadioIfShift, InstallDir) {
 	InstallDir := RegExReplace(InstallDir, "(.*[^\\]$)", "$1\")
 	FileCreateDir, %InstallDir%
 	if ErrorLevel
 		MsgBox Can't create dir in %InstallDir%
-	; else
-	; 	MsgBox Created %InstallDir%
 	FileCopy %A_ScriptName%, %InstallDir%, 1
 	If !A_IsCompiled
 		FileCopy vt.ico, %InstallDir%
@@ -232,7 +250,7 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 		RegWrite, REG_SZ, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\, Icon, % A_IsCompiled ? InstPath : (InstallDir . "vt.ico")
 		if ErrorLevel
 			MsgBox Can't write in registry HKEY_CLASSES_ROOT
-	} else if RadioSendTo {
+	} else {
 		RegRead, SendToDir, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders, SendTo
 		SplitPath, A_ScriptName,,,, A_ScriptNameNoExt
 		Args := A_IsCompiled ? "" : A_ScriptFullPath " "
@@ -240,7 +258,7 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 		FileCreateShortcut %Target%, %SendToDir%\%A_ScriptNameNoExt%.lnk,, %Args%
 	}
 	RegWrite, REG_SZ, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, UninstallString
-	, %NoCompile%"%InstPath%" -uninstall
+	, %NoCompile%"%InstPath%"
 	RegWrite, REG_SZ, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, DisplayName
 	, VirusTotal Hash Checker
 	RegWrite, REG_SZ, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, DisplayIcon, %InstPath%
@@ -254,8 +272,7 @@ install(InstallDir, RadioIfShift, RadioSendTo) {
 	ExitApp
 	Return
 }
-apply(RadioIfShift, RadioSendTo) {
-	Global ApplyButtonOn
+apply(RadioIfShift) {
 	RegRead, InstallDir, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, InstallLocation
 	InstPath := InstallDir A_ScriptName
 	NoCompile := A_IsCompiled ? "" : """" A_AhkPath """" " "
@@ -283,34 +300,22 @@ apply(RadioIfShift, RadioSendTo) {
 	Sleep 1000
 	Control, Enable,,, ahk_id %InstallButtonid%
 	GuiControl, installGui:, % InstallButtonid, &Uninstall
-	ApplyButtonOn := false
 }
 uninstall() {
 	; Shift
 	RegDelete, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check
-	econtext:=ErrorLevel
 	; SendTo
 	RegRead, SendToDir, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders, SendTo
 	SplitPath, A_ScriptName,,,, A_ScriptNameNoExt
 	FileDelete, %SendToDir%\%A_ScriptNameNoExt%.lnk
-	esendto:=ErrorLevel
 
-	; Files
 	RegRead, InstallDir, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker, InstallLocation
-	; FileDelete % InstallDir . A_ScriptName
-
-	; Loop, %InstallDir%*, 1
-	; 	FilesInDir := true
-	; If !FilesInDir
-	; 	FileRemoveDir % InstallDir
 
 	; InstallSoftwareList
 	RegDelete, HKEY_LOCAL_MACHINE, SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker
+	; Files
 	If !A_IsCompiled
 		FileDelete % InstallDir . "vt.ico"
-	euninst:=ErrorLevel
-
-	; MsgBox Uninstall complete`ncontext: %econtext%, sendto: %esendto%, ProgramFiles: %epf%, uninst: %euninst%
 	Run, %comspec% /c del "%InstallDir%%A_ScriptName%" & rd "%InstallDir%",, Hide ; hack - change A_ScriptName to regestry note
 	ExitApp
 }
@@ -435,6 +440,9 @@ Bitmap_SetImage(hCtrl, hBitmap) {
 }
 
 /*
+	; Comparision Phrozen VirusTotal Uploader: +No size-limit 128 Mb, +No internet traffic,
+	; if file unrecognized; -No uploads unrecognized files automatically. In this rare case, you can upload it manually.
+
 	HKEY_CLASSES_ROOT\*\shell\VirusTotal hash check
 		Extended=""
 		Icon=C:\Program Files\VirusTotal Hash Checker\VirusTotalHashChecker.exe,0
