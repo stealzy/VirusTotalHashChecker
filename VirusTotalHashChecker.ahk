@@ -36,7 +36,7 @@ guiShow() {
 	lng := lngCodeList[A_Language] ? lngCodeList[A_Language] : "en"
 	titleText:={en:"VirusTotal Hash Checker Setup",ru:"Установка VirusTotal HashChecker"}[lng]
 	howerText:={en:"wikipedia.org/wiki/Checksum",ru:"wikipedia.org/wiki/Контрольная сумма"}[lng]
-	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"позволяет проверить файл на вирусы путем`nвычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и его поиска в баз хешей проверенных файлов."}[lng]
+	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"позволяет проверить файл на вирусы путем`nвычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и его поиска в базе хешей проверенных файлов."}[lng]
 	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установи и проверяй через контекстное меню`,`nлибо перетащи файлы на это окно или файл программы."}[lng]
 	displayConMenText := {en:"Display context menu item",ru:"Отображать в контекстном меню"}[lng]
 	showSendToText := {en:"in | Send to  > |  submenu",ru:"В подменю | Отправить  > |"}[lng]
