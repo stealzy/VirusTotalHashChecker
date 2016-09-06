@@ -7,3 +7,5 @@ by dragging and dropping your files onto program exe file or onto program window
 ![Send to check](http://funkyimg.com/i/2gnDt.png)  
 You can see 4 false positives antivirus, because I use MPRESS to compressing resulting exe.
 ![See result](http://funkyimg.com/i/2gnxT.png)
+## Download
+https://github.com/stealzy/VirusTotalHashChecker/releases/latest
