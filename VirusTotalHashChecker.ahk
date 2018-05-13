@@ -1,4 +1,4 @@
-п»ї#NoEnv
+#NoEnv
 #SingleInstance Force
 #NoTrayIcon
 #KeyHistory 0
@@ -30,14 +30,14 @@ guiShow() {
 	Static RadioSendTo
 	lngCodeList := {0419:"ru"}
 	lng := lngCodeList[A_Language] ? lngCodeList[A_Language] : "en"
-	titleText:={en:"VirusTotal Hash Checker Setup",ru:"РЈСЃС‚Р°РЅРѕРІРєР° VirusTotal HashChecker"}[lng]
-	howerText:={en:"wikipedia.org/wiki/Checksum",ru:"wikipedia.org/wiki/РљРѕРЅС‚СЂРѕР»СЊРЅР°СЏ СЃСѓРјРјР°"}[lng]
-	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"РїРѕР·РІРѕР»СЏРµС‚ РїСЂРѕРІРµСЂРёС‚СЊ С„Р°Р№Р» РЅР° РІРёСЂСѓСЃС‹ РїСѓС‚РµРј`nРІС‹С‡РёСЃР»РµРЅРёСЏ <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">С…РµС€Р°</a> Рё РµРіРѕ РїРѕРёСЃРєР° РІ Р±Р°Р·Рµ С…РµС€РµР№ РїСЂРѕРІРµСЂРµРЅРЅС‹С… С„Р°Р№Р»РѕРІ."}[lng]
-	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"РЈСЃС‚Р°РЅРѕРІРё Рё РїСЂРѕРІРµСЂСЏР№ С‡РµСЂРµР· РєРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ`,`nР»РёР±Рѕ РїРµСЂРµС‚Р°С‰Рё С„Р°Р№Р»С‹ РЅР° СЌС‚Рѕ РѕРєРЅРѕ РёР»Рё С„Р°Р№Р» РїСЂРѕРіСЂР°РјРјС‹."}[lng]
-	displayConMenText := {en:"Display context menu item",ru:"РћС‚РѕР±СЂР°Р¶Р°С‚СЊ РІ РєРѕРЅС‚РµРєСЃС‚РЅРѕРј РјРµРЅСЋ"}[lng]
-	showSendToText := {en:"in | Send to  -> |  submenu",ru:"Р’ РїРѕРґРјРµРЅСЋ | РћС‚РїСЂР°РІРёС‚СЊ  > |"}[lng]
-	showExtendText := {en:"if [ SHIFT ] key is holding",ru:"РџСЂРё Р·Р°Р¶Р°С‚РѕРј [ SHIFT ] 'Рµ"}[lng]
-	DestinationFolderText := {en:"Destination Folder",ru:"РџР°РїРєР° СѓСЃС‚Р°РЅРѕРІРєРё"}[lng]
+	titleText:={en:"VirusTotal Hash Checker Setup",ru:"Установка VirusTotal HashChecker"}[lng]
+	howerText:={en:"wikipedia.org/wiki/Checksum",ru:"wikipedia.org/wiki/Контрольная сумма"}[lng]
+	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"позволяет проверить файл на вирусы путем`nвычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и его поиска в базе хешей проверенных файлов."}[lng]
+	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установи и проверяй через контекстное меню`,`nлибо перетащи файлы на это окно или файл программы."}[lng]
+	displayConMenText := {en:"Display context menu item",ru:"Отображать в контекстном меню"}[lng]
+	showSendToText := {en:"in | Send to  -> |  submenu",ru:"В подменю | Отправить  > |"}[lng]
+	showExtendText := {en:"if [ SHIFT ] key is holding",ru:"При зажатом [ SHIFT ] 'е"}[lng]
+	DestinationFolderText := {en:"Destination Folder",ru:"Папка установки"}[lng]
 	; for good-looking on 125% system scale
 	RegRead, DisplayScale, HKEY_CURRENT_USER, Control Panel\Desktop\WindowMetrics, AppliedDPI
 	If (DisplayScale=96) {
