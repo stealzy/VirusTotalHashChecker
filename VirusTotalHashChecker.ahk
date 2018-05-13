@@ -1,27 +1,23 @@
 ﻿#NoEnv
-	#SingleInstance Force
-	#NoTrayIcon
-	#KeyHistory 0
-	SetBatchLines -1
-	ListLines, Off
-	SetWorkingDir, %A_ScriptDir%
-	Global InstallDir, AhkPic, VTPic, RadioIfShift, InstallButtonid, ExistInstallDir, howerText
+#SingleInstance Force
+#NoTrayIcon
+#KeyHistory 0
+SetBatchLines -1
+ListLines Off
+SetWorkingDir % A_ScriptDir
+Global InstallDir, AhkPic, VTPic, RadioIfShift, InstallButtonid, ExistInstallDir, howerText
 
-if (%0% != 0) { ; command line extraction
-	param := []
-	Loop, %0%
-	{
-		param[A_Index] := %A_Index%
-	}
+if (A_Args.Length() != 0) { ; command line extraction
 
-	if (param[1]="-uninstall")
+	if (A_Args[1]="-uninstall")
 		uninstall()
-	else if (param[1]="-install")
-		install(param[2], param[3] "\")
-	else if (param[1]="-apply")
-		apply(param[2])
+	else if (A_Args[1]="-install")
+		install(A_Args[2], A_Args[3] "\")
+	else if (A_Args[1]="-apply")
+		apply(A_Args[2])
 	else {
-		runURLwithFileHash(param[1])
+		for n, param in A_Args
+			runURLwithFileHash(param)
 	}
 	ExitApp
 } else {
@@ -39,9 +35,10 @@ guiShow() {
 	explanationText := {en:"allow you to check file for malware`,`nby calculating the <a href=""https://en.wikipedia.org/wiki/Checksum"">checksum</a> and search it on VirusTotal.",ru:"позволяет проверить файл на вирусы путем`nвычисления <a href=""https://ru.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0"">хеша</a> и его поиска в базе хешей проверенных файлов."}[lng]
 	installationText := {en:"After intallation, you'll have item in context menu`,`nhowever you can check files without installation, by dragging and dropping`nyour files onto program exe file or onto this window.",ru:"Установи и проверяй через контекстное меню`,`nлибо перетащи файлы на это окно или файл программы."}[lng]
 	displayConMenText := {en:"Display context menu item",ru:"Отображать в контекстном меню"}[lng]
-	showSendToText := {en:"in | Send to  > |  submenu",ru:"В подменю | Отправить  > |"}[lng]
-	showExtendText := {en:"if the [ SHIFT ] is holding",ru:"При зажатом [ SHIFT ] 'е"}[lng]
+	showSendToText := {en:"in | Send to  -> |  submenu",ru:"В подменю | Отправить  > |"}[lng]
+	showExtendText := {en:"if [ SHIFT ] key is holding",ru:"При зажатом [ SHIFT ] 'е"}[lng]
 	DestinationFolderText := {en:"Destination Folder",ru:"Папка установки"}[lng]
+	; for good-looking on 125% system scale
 	RegRead, DisplayScale, HKEY_CURRENT_USER, Control Panel\Desktop\WindowMetrics, AppliedDPI
 	If (DisplayScale=96) {
 		ContextImage:="ContextMenu"
@@ -67,8 +64,10 @@ guiShow() {
 	Gui, installGui: Add, Link, xm c0x444444, VirusTotal HashChecker %explanationText%
 	Gui, installGui: Add, Text, c0x444444 y+5, % installationText
 	Gui, installGui: Add, GroupBox, w390 h60 xm, %displayConMenText%:
+	Gui, installGui: Font,, Consolas
 	Gui, installGui: Add, Radio, vRadioSendTo gChangeRadioDisplayItemOpt checked xp+10 yp+18, %showSendToText%
 	Gui, installGui: Add, Radio, vRadioIfShift gChangeRadioDisplayItemOpt HwndRadioIfShiftId, %showExtendText%
+	Gui, installGui: Font
 	If ExistInstallDir {
 		RegRead extendContextKey, HKEY_CLASSES_ROOT, *\shell\VirusTotal hash check\command
 		If extendContextKey
@@ -87,11 +86,11 @@ guiShow() {
 	Gui, installGui: Add, Button, %rightButL% w70 xp+320 HwndInstallButtonid, %rightButName%
 	GuiButtonIcon(InstallButtonid, "imageres.dll", 74, "a0 l2")
 	Gui, installGui: Font, S9
-	Gui, installGui: Add, Link, c0x0F75BC xm+150 yp+3 ,<a href="https://github.com/stealzy/VirusTotalHashChecker">ste@lzy</a>, 2016
+	Gui, installGui: Add, Link, c0x0F75BC xm+150 yp+3 ,<a href="https://github.com/stealzy/VirusTotalHashChecker">ste@lzy</a>, 2016-18
 	Gui, installGui: Show, ,%titleText%
 	ControlFocus,, ahk_id %InstallButtonid%
-	OnMessage(0x200, "Hower")
-	OnMessage(0x20, "Hower")
+	OnMessage(WM_MOUSEMOVE := 0x200, "Hower")
+	OnMessage(WM_SETCURSOR := 0x20, "Hower")
 	Return
 
 	GotoVTsite:
@@ -419,32 +418,6 @@ GuiButtonIcon(Handle, File, Index := 1, Options := "") {
 	SendMessage, BCM_SETIMAGELIST := 5634, 0, &button_il,, AHK_ID %Handle%
 	return IL_Add( normal_il, File, Index )
 }
-
-/*
-	Comparision Phrozen VirusTotal Uploader: +No size-limit 128 Mb, +No internet traffic,
-	if file unrecognized; -No uploads unrecognized files automatically. In this rare case, you can upload it manually.
-
-	HKEY_CLASSES_ROOT\*\shell\VirusTotal hash check
-		Extended=""
-		Icon=C:\Program Files\VirusTotal Hash Checker\VirusTotalHashChecker.exe,0
-		command
-			@=C:\Program Files\VirusTotal Hash Checker\VirusTotalHashChecker.exe "%1"
-
-	DirInst := %ProgramFiles%
-	HKEY_LOCAL_MACHINE\SOFTWARE\VirusTotalHashChecker
-	; HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\VirusTotalHashChecker ; for 32 in 64
-		;Install_Dir=%DirInst%\VirusTotalHashChecker    -    пишут для себя
-	HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\VirusTotalHashChecker
-		DisplayName=VirusTotal Uploader
-		DisplayIcon=C:\Program Files (x86)\VirusTotalHashChecker\VirusTotalHashChecker.exe,0
-		DisplayVersion=1.0
-		EstimatedSize=:dw:000FB000
-		InstallLocation="C:\Program Files (x86)\VirusTotal Hash Checker"
-		NoModify=:dw01
-		NoRepair=:dw01
-		Publisher=stealzy
-		UninstallString="C:\Program Files (x86)\VirusTotalHashChecker\VirusTotalHashChecker.exe" -uninstall
-*/
 
 Bitmap_SetImage(hCtrl, hBitmap) {
 	; STM_SETIMAGE = 0x172, IMAGE_BITMAP = 0x00, SS_BITMAP = 0x0E
