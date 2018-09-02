@@ -307,6 +307,10 @@ uninstall() {
 }
 
 runURLwithFileHash(filePath) {
+	static x64FsRedirectionDisabled := false
+	If (A_Is64bitOS and (A_PtrSize = 4) and Not x64FsRedirectionDisabled)
+		x64FsRedirectionDisabled := DllCall("Wow64DisableWow64FsRedirection")
+	
 	hash:= LowCase(HashFile(filePath, "SHA256"))
 	Run https://www.virustotal.com/ru/file/%hash%/analysis/
 }
