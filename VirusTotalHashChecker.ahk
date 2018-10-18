@@ -26,6 +26,66 @@ if (A_Args.Length() != 0) { ; command line extraction
 }
 Return
 
+; https://github.com/jNizM/HashCalc
+CalcFileHash(filename, algid, continue = 0, byref hash = 0, byref hashlength = 0) {
+	fpos := ""
+	if (!(f := FileOpen(filename, "r")))
+		return
+	f.pos := 0
+	if (!continue && f.length > 0x7fffffff)
+		return
+	if (!continue) {
+		VarSetCapacity(data, f.length, 0)
+		f.rawRead(&data, f.length)
+		f.pos := oldpos
+		return CalcAddrHash(&data, f.length, algid, hash, hashlength)
+	}
+	hashlength := 0
+	while (f.pos < f.length) {
+		readlength := (f.length - fpos > continue) ? continue : f.length - f.pos
+		VarSetCapacity(data, hashlength + readlength, 0)
+		DllCall("RtlMoveMemory", "Ptr", &data, "Ptr", &hash, "Ptr", hashlength)
+		f.rawRead(&data + hashlength, readlength)
+		h := CalcAddrHash(&data, hashlength + readlength, algid, hash, hashlength)
+	}
+	return h
+}
+CalcAddrHash(addr, length, algid, byref hash = 0, byref hashlength = 0) {
+	static h := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "a", "b", "c", "d", "e", "f"]
+	static b := h.minIndex()
+	hProv := hHash := o := ""
+	if (DllCall("advapi32\CryptAcquireContext", "Ptr*", hProv, "Ptr", 0, "Ptr", 0, "UInt", 24, "UInt", 0xf0000000)) {
+		if (DllCall("advapi32\CryptCreateHash", "Ptr", hProv, "UInt", algid, "UInt", 0, "UInt", 0, "Ptr*", hHash)) {
+			if (DllCall("advapi32\CryptHashData", "Ptr", hHash, "Ptr", addr, "UInt", length, "UInt", 0)) {
+				if (DllCall("advapi32\CryptGetHashParam", "Ptr", hHash, "UInt", 2, "Ptr", 0, "UInt*", hashlength, "UInt", 0)) {
+					VarSetCapacity(hash, hashlength, 0)
+					if (DllCall("advapi32\CryptGetHashParam", "Ptr", hHash, "UInt", 2, "Ptr", &hash, "UInt*", hashlength, "UInt", 0)) {
+						loop % hashlength
+						{
+							v := NumGet(hash, A_Index - 1, "UChar")
+							o .= h[(v >> 4) + b] h[(v & 0xf) + b]
+						}
+					}
+				}
+			}
+			DllCall("advapi32\CryptDestroyHash", "Ptr", hHash)
+		}
+		DllCall("advapi32\CryptReleaseContext", "Ptr", hProv, "UInt", 0)
+	}
+	return o
+}
+
+runURLwithFileHash(filePath) {
+	static x64FsRedirectionDisabled := false
+	If (A_Is64bitOS and (A_PtrSize = 4) and Not x64FsRedirectionDisabled)
+		x64FsRedirectionDisabled := DllCall("Wow64DisableWow64FsRedirection")
+	
+	hash:= CalcFileHash(filePath, CALG_SHA_256 := 0x800c, 64 * 1024)
+	Run https://www.virustotal.com/ru/file/%hash%/analysis/
+}
+
+
+
 guiShow() {
 	Static RadioSendTo
 	lngCodeList := {0419:"ru"}
@@ -180,24 +240,24 @@ Hower(wParam, lParam, msg, hwnd) {
 		if (idControlUnderM=AhkPic || idControlUnderM=VTPic) {
 			hover := true
 			DllCall("SetCursor","UInt",hCurs)
-			TT((idControlUnderM=AhkPic) ? "ahkscript.org" : "virustotal.com", 1)
+			toolTip_((idControlUnderM=AhkPic) ? "ahkscript.org" : "virustotal.com", 1)
 		} else if (!(idControlUnderM=AhkPic || idControlUnderM=VTPic)) {
 			hover := false
-			TT(, 1)
+			toolTip_(, 1)
 		}
 
 		if (ClassNNControlUnderM = "SysLink1") && (A_Cursor != "Arrow")
-			TT(howerText, 2)
+			toolTip_(howerText, 2)
 		else
-			TT(, 2)
+			toolTip_(, 2)
 
 		if (ClassNNControlUnderM = "SysLink2") && (A_Cursor != "Arrow")
-			TT("GitHub.com/stealzy/VirusTotalHashChecker", 3)
+			toolTip_("GitHub.com/stealzy/VirusTotalHashChecker", 3)
 		else
-			TT(, 3)
+			toolTip_(, 3)
 	}
 }
-TT(textTT:="", numTT:="", showTT:=false) {
+toolTip_(textTT:="", numTT:="", showTT:=false) {
 	static textOld, numTTOld
 
 	if textTT {
@@ -213,7 +273,7 @@ TT(textTT:="", numTT:="", showTT:=false) {
 	Return
 
 	ShowTT:
-		TT(,, true)
+		toolTip_(,, true)
 		Return
 }
 install(RadioIfShift, InstallDir) {
@@ -306,102 +366,6 @@ uninstall() {
 	ExitApp
 }
 
-runURLwithFileHash(filePath) {
-	static x64FsRedirectionDisabled := false
-	If (A_Is64bitOS and (A_PtrSize = 4) and Not x64FsRedirectionDisabled)
-		x64FsRedirectionDisabled := DllCall("Wow64DisableWow64FsRedirection")
-	
-	hash:= LowCase(HashFile(filePath, "SHA256"))
-	Run https://www.virustotal.com/ru/file/%hash%/analysis/
-}
-
-LowCase(string) {
-	StringLower low_string, string
-	Return low_string
-}
-HashFile(filePath,hashType=2) { ; By Deo, http://www.autohotkey.com/forum/viewtopic.php?t=71133
-	PROV_RSA_AES := 24
-	CRYPT_VERIFYCONTEXT := 0xF0000000
-	BUFF_SIZE := 1024 * 1024 ; 1 MB
-	HP_HASHVAL := 0x0002
-	HP_HASHSIZE := 0x0004
-
-	HASH_ALG := (hashType = "MD2") ? (CALG_MD2 := 32769) : HASH_ALG
-	HASH_ALG := (hashType = "MD5") ? (CALG_MD5 := 32771) : HASH_ALG
-	HASH_ALG := (hashType = "SHA") ? (CALG_SHA := 32772) : HASH_ALG
-	HASH_ALG := (hashType = "SHA256") ? (CALG_SHA_256 := 32780) : HASH_ALG   ;Vista+ only
-	HASH_ALG := (hashType = "SHA384") ? (CALG_SHA_384 := 32781) : HASH_ALG   ;Vista+ only
-	HASH_ALG := (hashType = "SHA512") ? (CALG_SHA_512 := 32782) : HASH_ALG   ;Vista+ only
-
-	f := FileOpen(filePath,"r","CP0")
-	if !IsObject(f)
-		return 0
-	if !hModule := DllCall( "GetModuleHandleW", "str", "Advapi32.dll", "Ptr" )
-		hModule := DllCall( "LoadLibraryW", "str", "Advapi32.dll", "Ptr" )
-	if !dllCall("Advapi32\CryptAcquireContextW"
-			,"Ptr*",hCryptProv
-			,"Uint",0
-			,"Uint",0
-			,"Uint",PROV_RSA_AES
-			,"UInt",CRYPT_VERIFYCONTEXT )
-		Gosub,HashTypeFreeHandles
-
-	if !dllCall("Advapi32\CryptCreateHash"
-			,"Ptr",hCryptProv
-			,"Uint",HASH_ALG
-			,"Uint",0
-			,"Uint",0
-			,"Ptr*",hHash )
-		Gosub, HashTypeFreeHandles
-
-	VarSetCapacity(read_buf,BUFF_SIZE,0)
-
-	hCryptHashData := DllCall("GetProcAddress", "Ptr", hModule, "AStr", "CryptHashData", "Ptr")
-	While (cbCount := f.RawRead(read_buf, BUFF_SIZE))
-	{
-		if (cbCount = 0)
-			break
-
-		if !dllCall(hCryptHashData
-				,"Ptr",hHash
-				,"Ptr",&read_buf
-				,"Uint",cbCount
-				,"Uint",0 )
-			Gosub, HashTypeFreeHandles
-	}
-
-	if !dllCall("Advapi32\CryptGetHashParam"
-			,"Ptr",hHash
-			,"Uint",HP_HASHSIZE
-			,"Uint*",HashLen
-			,"Uint*",HashLenSize := 4
-			,"UInt",0 )
-		Gosub, HashTypeFreeHandles
-
-	VarSetCapacity(pbHash,HashLen,0)
-	if !dllCall("Advapi32\CryptGetHashParam"
-			,"Ptr",hHash
-			,"Uint",HP_HASHVAL
-			,"Ptr",&pbHash
-			,"Uint*",HashLen
-			,"UInt",0 )
-		Gosub, HashTypeFreeHandles
-
-	SetFormat,integer,Hex
-	loop,%HashLen%
-	{
-		num := numget(pbHash,A_index-1,"UChar")
-		hashval .= substr((num >> 4),0) . substr((num & 0xf),0)
-	}
-	SetFormat,integer,D
-
-	HashTypeFreeHandles:
-	f.Close()
-	DllCall("FreeLibrary", "Ptr", hModule)
-	dllCall("Advapi32\CryptDestroyHash","Ptr",hHash)
-	dllCall("Advapi32\CryptReleaseContext","Ptr",hCryptProv,"UInt",0)
-	return hashval
-}
 GuiButtonIcon(Handle, File, Index := 1, Options := "") {
 	RegExMatch(Options, "i)w\K\d+", W), (W="") ? W := 16 :
 	RegExMatch(Options, "i)h\K\d+", H), (H="") ? H := 16 :
